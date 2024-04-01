@@ -363,7 +363,7 @@
             </dependency>
             <dependency>
                 <groupId>com.dogbody.spring-framework</groupId>
-                <artifactId>web-starter-common</artifactId>
+                <artifactId>web-common-starter</artifactId>
                 <version>1.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
