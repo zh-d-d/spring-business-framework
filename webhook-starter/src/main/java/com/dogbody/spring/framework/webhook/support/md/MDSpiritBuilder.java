@@ -1,6 +1,7 @@
 package com.dogbody.spring.framework.webhook.support.md;
 
 import com.dogbody.spring.framework.webhook.support.md.common.Common;
+import com.dogbody.spring.framework.webhook.support.md.link.Link;
 import com.dogbody.spring.framework.webhook.support.md.style.Style;
 import com.dogbody.spring.framework.webhook.support.md.text.Quote;
 import com.dogbody.spring.framework.webhook.support.md.text.Text;
@@ -39,6 +40,11 @@ public class MDSpiritBuilder {
 
     public MDSpiritBuilder quote(Object value) {
         content.add(new Quote(value));
+        return this;
+    }
+
+    public MDSpiritBuilder link(Object text, String link) {
+        content.add(new Link(text, link));
         return this;
     }
 
