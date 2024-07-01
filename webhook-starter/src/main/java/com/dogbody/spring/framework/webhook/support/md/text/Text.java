@@ -1,5 +1,6 @@
 package com.dogbody.spring.framework.webhook.support.md.text;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.dogbody.spring.framework.webhook.support.md.MarkdownElement;
 import com.dogbody.spring.framework.webhook.support.md.style.Style;
 import lombok.Data;
@@ -34,6 +35,6 @@ public class Text extends MarkdownElement {
 
     public String getValue() {
 
-        return "<font " + getStyleContent() + ">" + value.toString() + "</font>";
+        return "<font " + getStyleContent() + ">" + ObjectUtil.toString(value) + "</font>";
     }
 }
