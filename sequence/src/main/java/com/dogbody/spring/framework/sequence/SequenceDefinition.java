@@ -32,7 +32,7 @@ public class SequenceDefinition {
      * 为负数表示递减
      */
     private int step = 1;
-    private int cacheSize = 10;
+    private int cacheSize = 100;
     private String cacheMode = CacheMode.MEMORY.name();
 
     public SequenceDefinition(String key) {
