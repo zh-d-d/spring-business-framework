@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
@@ -41,22 +42,23 @@ public class SequenceAutoConfiguration {
         return new DataSourceDataAccessor(dataSource, sequenceProperties);
     }
 
-    @Bean("seqCacheRedisTemplate")
-    @ConditionalOnClass(RedisTemplate.class)
-    @ConditionalOnMissingBean(name = "seqCacheRedisTemplate")
-    public RedisTemplate<String, Object> seqCacheRedisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-        template.setKeySerializer(RedisSerializer.string());
-        template.setValueSerializer(RedisSerializer.json());
-        return template;
-    }
 
     @Configuration
     @ConditionalOnClass(RedisTemplate.class)
-    public static class redisCachePoolConfig {
+    public static class SeqRedisCachePoolConfig {
+
+        @Bean("seqCacheRedisTemplate")
+        @ConditionalOnMissingBean(name = "seqCacheRedisTemplate")
+        public RedisTemplate<String, Object> seqCacheRedisTemplate(RedisConnectionFactory connectionFactory) {
+            RedisTemplate<String, Object> template = new RedisTemplate<>();
+            template.setConnectionFactory(connectionFactory);
+            template.setKeySerializer(RedisSerializer.string());
+            template.setValueSerializer(RedisSerializer.json());
+            return template;
+        }
+
         @Bean
-        @ConditionalOnClass(RedisTemplate.class)
+        @DependsOn("seqCacheRedisTemplate")
         public CacheProvider redisCachePool(RedisTemplate<String, Object> seqCacheRedisTemplate, SequenceProperties sequenceProperties) {
             return new RedisCacheProvider(seqCacheRedisTemplate, sequenceProperties);
         }
