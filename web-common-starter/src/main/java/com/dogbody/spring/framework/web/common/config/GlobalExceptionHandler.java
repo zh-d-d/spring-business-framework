@@ -7,8 +7,6 @@ import com.dogbody.spring.framework.web.common.response.ResponseModule;
 import com.dogbody.spring.framework.web.common.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.internal.engine.path.PathImpl;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.ClassUtils;
@@ -30,10 +28,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 
 import static com.dogbody.spring.framework.web.common.constant.ResponseStatusConstant.PARAM_INVALID;
 import static com.dogbody.spring.framework.web.common.constant.ResponseStatusConstant.SERVER_ERROR;
@@ -46,10 +41,16 @@ import static com.dogbody.spring.framework.web.common.constant.ResponseStatusCon
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final List<ExceptionHandlerExt> exceptionHandlerExtList;
+
+    public GlobalExceptionHandler(List<ExceptionHandlerExt> exceptionHandlerExtList){
+        this.exceptionHandlerExtList=exceptionHandlerExtList;
+    }
+
     /*************************************  Business Exception Handing  *************************************/
     @ExceptionHandler(BaseException.class)
     public ResponseModule<String> handleBusinessException(BaseException ex) {
-        logError(ex);
+        handlerError(ex);
         return ResponseModule.fail(ex.getStatus(), ex.getMessage());
     }
 
@@ -99,21 +100,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseModule<String> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         String errorMsg = StrUtil.format("不支持该HTTP方法: {}, 请使用 {}", ex.getMethod(), Arrays.toString(ex.getSupportedMethods()));
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseModule<String> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex) {
         String errorMsg = StrUtil.format("不支持该媒体类型: {}, 请使用 {}", ex.getContentType(), ex.getSupportedMediaTypes());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
     public ResponseModule<String> handleHttpMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException ex) {
         String errorMsg = StrUtil.format("不支持的媒体类型, 请使用 {}", ex.getSupportedMediaTypes());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -122,7 +123,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseModule<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         String errorMsg = StrUtil.format("参数解析失败, {}", ex.getMessage());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -140,42 +141,42 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingPathVariableException.class)
     public ResponseModule<String> handleMissingPathVariableException(MissingPathVariableException ex) {
         String errorMsg = StrUtil.format("丢失路径参数, 参数名: {}, 参数类型: {}", ex.getVariableName(), ex.getParameter().getParameterType());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(MissingRequestCookieException.class)
     public ResponseModule<String> handleMissingRequestCookieException(MissingRequestCookieException ex) {
         String errorMsg = StrUtil.format("丢失Cookie参数, 参数名: {}, 参数类型: {}", ex.getCookieName(), ex.getParameter().getParameterType());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseModule<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
         String errorMsg = StrUtil.format("丢失Header参数, 参数名: {}, 参数类型: {}", ex.getHeaderName(), ex.getParameter().getParameterType());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseModule<String> handleMissingServletRequestPartException(MissingServletRequestPartException ex) {
         String errorMsg = StrUtil.format("丢失参数: {}", ex.getRequestPartName());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseModule<String> handleServletRequestParameterException(MissingServletRequestParameterException ex) {
         String errorMsg = StrUtil.format("丢失Query参数, 参数名: {}, 参数类型: {}", ex.getParameterName(), ex.getParameterType());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
     @ExceptionHandler(ServletRequestBindingException.class)
     public ResponseModule<String> handleServletRequestBindingException(ServletRequestBindingException ex) {
         String errorMsg = StrUtil.format("参数绑定失败: {}", ex.getMessage());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -188,7 +189,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     public ResponseModule<String> handleBindException(BindException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getBindingResult());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -198,7 +199,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseModule<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getBindingResult());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -208,7 +209,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseModule<String> handleConstraintViolationException(ConstraintViolationException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getConstraintViolations());
-        log.error(errorMsg);
+        handlerError(errorMsg);
         return buildResponse(errorMsg, PARAM_INVALID);
     }
 
@@ -240,7 +241,7 @@ public class GlobalExceptionHandler {
 
     private ResponseModule<String> loggingThenBuildResponse(Throwable throwable) {
         Throwable rootCause = ExceptionUtil.getRootCause(throwable);
-        logError(rootCause);
+        handlerError(rootCause);
         return buildResponse(rootCause.getMessage(), SERVER_ERROR);
     }
 
@@ -251,9 +252,13 @@ public class GlobalExceptionHandler {
         return ResponseModule.fail(code, message);
     }
 
-    private void logError(Throwable throwable) {
+    private void handlerError(String error){
+        exceptionHandlerExtList.forEach(item-> item.handlerError(error));
+    }
+
+    private void handlerError(Throwable throwable) {
         String exMsg = ExceptionUtil.getMessage(throwable);
-        log.error(exMsg, throwable);
+        exceptionHandlerExtList.forEach(item-> item.handlerError(exMsg,throwable));
     }
 
 }

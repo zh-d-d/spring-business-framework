@@ -34,11 +34,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
         </dependency>
-        <dependency>
-            <groupId>net.steppschuh.markdowngenerator</groupId>
-            <artifactId>markdowngenerator</artifactId>
-            <version>1.3.2</version>
-        </dependency>
     </dependencies>
 
     <build>
