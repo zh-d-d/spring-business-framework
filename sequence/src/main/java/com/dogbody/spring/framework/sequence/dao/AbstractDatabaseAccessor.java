@@ -2,6 +2,7 @@ package com.dogbody.spring.framework.sequence.dao;
 
 import com.dogbody.spring.framework.sequence.SequenceDefinition;
 import com.dogbody.spring.framework.sequence.exception.SequenceException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.Optional;
 /**
  * @author zhangdd on 2024/8/6
  */
+@Slf4j
 public abstract class AbstractDatabaseAccessor implements DataAccessor {
 
     private final static String CREATE_TABLE_DDL = "CREATE TABLE IF NOT EXISTS $TABLE_NAME(\n" +
@@ -36,7 +38,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
 
     private final static String SELECT_NUM_FOR_UPDATE = "select number from $TABLE_NAME where `key`=? for update";
 
-    private final static String UPDATE_NUMBER = "update $TABLE_NAME set number=? where number=? and `key`=?";
+    private final static String UPDATE_NUMBER = "update $TABLE_NAME set number=? , modify_time=now() where `key`=?";
 
     protected abstract Connection getConnection() throws SQLException;
 
@@ -49,7 +51,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
     @Override
     public void init() {
         //创建数据库表
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             String createTableSql = CREATE_TABLE_DDL.replace("$TABLE_NAME", tableName);
             PreparedStatement preparedStatement = connection.prepareStatement(createTableSql);
             preparedStatement.execute();
@@ -62,7 +64,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
     @Override
     public Optional<SequenceDefinition> find(String key) {
         String sql = FIND_DEFINITION_USE_KEY.replace("$TABLE_NAME", tableName);
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, key);
             ResultSet resultSet = statement.executeQuery();
@@ -85,7 +87,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
     @Override
     public void insert(SequenceDefinition definition) {
         String sql = INSERT_DEFINITION.replace("$TABLE_NAME", tableName);
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, definition.getName());
             statement.setString(2, definition.getKey());
@@ -106,7 +108,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
     @Override
     public void update(SequenceDefinition definition) {
         String sql = UPDATE_DEFINITION.replace("$TABLE_NAME", tableName);
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setLong(1, definition.getInitialValue());
             statement.setInt(2, definition.getStep());
@@ -122,11 +124,11 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
 
     @Override
     public long grow(SequenceDefinition definition) {
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
             long oldNumber = getNumberForUpdate(definition.getKey());
             long newNumber = oldNumber + (long) definition.getStep() * definition.getCacheSize();
-            updateNumber(definition.getKey(), oldNumber, newNumber);
+            updateNumber(definition.getKey(), newNumber);
             connection.commit();
             return newNumber;
         } catch (Exception e) {
@@ -138,7 +140,7 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
 
     private long getNumberForUpdate(String key) {
         String sql = SELECT_NUM_FOR_UPDATE.replace("$TABLE_NAME", tableName);
-        try (Connection connection = getConnection()){
+        try (Connection connection = getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setString(1, key);
             ResultSet resultSet = statement.executeQuery();
@@ -154,13 +156,13 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
         }
     }
 
-    private void updateNumber(String key, Long oldNumber, Long newNumber) {
+    private void updateNumber(String key, Long newNumber) {
         String sql = UPDATE_NUMBER.replace("$TABLE_NAME", tableName);
-        try (Connection connection = getConnection()){
+        log.info("sequence update number sql [{},key:{},newNumber:{}]", UPDATE_NUMBER, key, newNumber);
+        try (Connection connection = getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.setLong(1, newNumber);
-            statement.setLong(2, oldNumber);
-            statement.setString(3, key);
+            statement.setString(2, key);
             statement.executeUpdate();
         } catch (Exception e) {
             final String msg = String.format("fail to update sequence %s", key);

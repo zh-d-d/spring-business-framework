@@ -25,6 +25,7 @@ public class RedisCacheProvider implements CacheProvider {
 
     @Override
     public void add(String key, Long number) {
+        //todo 使用 set 比 list更加可靠
         redisTemplate.opsForList().rightPush(KEY_PREFIX + key, number);
         redisTemplate.expire(KEY_PREFIX + key, sequenceProperties.getRedisCacheExpire(), TimeUnit.SECONDS);
 
