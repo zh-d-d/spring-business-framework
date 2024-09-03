@@ -25,15 +25,13 @@ public class RedisCacheProvider implements CacheProvider {
 
     @Override
     public void add(String key, Long number) {
-        //todo 使用 set 比 list更加可靠
-        redisTemplate.opsForList().rightPush(KEY_PREFIX + key, number);
+        redisTemplate.opsForSet().add(KEY_PREFIX + key, number);
         redisTemplate.expire(KEY_PREFIX + key, sequenceProperties.getRedisCacheExpire(), TimeUnit.SECONDS);
-
     }
 
     @Override
     public Optional<Long> poll(String key) {
-        Object value = redisTemplate.opsForList().leftPop(KEY_PREFIX + key);
+        Object value = redisTemplate.opsForSet().pop(KEY_PREFIX + key);
         return Objects.isNull(value) ? Optional.empty() : Optional.of(Long.valueOf(value.toString()));
     }
 
