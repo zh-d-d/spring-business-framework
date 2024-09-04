@@ -27,7 +27,6 @@ public class Sequence {
                     String msg = String.format("no cache provider support cache mode: %s", definition.getCacheMode());
                     return new IllegalArgumentException(msg);
                 });
-        reloadCache();
     }
 
 
