@@ -40,6 +40,8 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
 
     private final static String UPDATE_NUMBER = "update $TABLE_NAME set number=? , modify_time=now() where `key`=?";
 
+    private final static String FIND_TABLE = "select table_name from information_schema.tables WHERE table_name=?";
+
     protected abstract Connection getConnection() throws SQLException;
 
     private final String tableName;
@@ -57,6 +59,21 @@ public abstract class AbstractDatabaseAccessor implements DataAccessor {
             preparedStatement.execute();
         } catch (Exception e) {
             final String msg = String.format("fail to execute create table %s ", tableName);
+            throw new SequenceException(msg, e);
+        }
+    }
+
+    @Override
+    public void checkTable() {
+        try (Connection connection = getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(FIND_TABLE);
+            statement.setString(1, tableName);
+            ResultSet resultSet = statement.executeQuery();
+            if (!resultSet.next()) {
+                throw new SequenceException("表【" + tableName + "】不存在");
+            }
+        } catch (Exception e) {
+            final String msg = String.format("fail to find table %s ", tableName);
             throw new SequenceException(msg, e);
         }
     }

@@ -27,7 +27,7 @@ public class SequenceManager implements SequenceGenerator {
     public SequenceManager(DataAccessor dataAccessor, List<CacheProvider> cacheProviders) {
         this.dataAccessor = dataAccessor;
         this.cacheProviders = cacheProviders;
-        dataAccessor.init();
+        dataAccessor.checkTable();
     }
 
     @Override

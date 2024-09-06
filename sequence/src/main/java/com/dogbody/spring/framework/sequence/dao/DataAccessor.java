@@ -11,6 +11,8 @@ public interface DataAccessor {
 
     void init();
 
+    void checkTable();
+
     Optional<SequenceDefinition> find(String key);
 
     void insert(SequenceDefinition definition);
