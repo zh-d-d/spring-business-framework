@@ -1,6 +1,5 @@
 package com.dogbody.spring.framework.web.common.config;
 
-import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dogbody.spring.framework.web.common.exception.BaseException;
 import com.dogbody.spring.framework.web.common.response.ResponseModule;
@@ -43,79 +42,76 @@ public class GlobalExceptionHandler {
 
     private final List<ExceptionHandlerExt> exceptionHandlerExtList;
 
-    public GlobalExceptionHandler(List<ExceptionHandlerExt> exceptionHandlerExtList){
-        this.exceptionHandlerExtList=exceptionHandlerExtList;
+    public GlobalExceptionHandler(List<ExceptionHandlerExt> exceptionHandlerExtList) {
+        this.exceptionHandlerExtList = exceptionHandlerExtList;
     }
 
     /*************************************  Business Exception Handing  *************************************/
     @ExceptionHandler(BaseException.class)
     public ResponseModule<String> handleBusinessException(BaseException ex) {
-        handlerError(ex);
+        exceptionHandlerExtList.forEach(item -> item.handlerError(ex.getStatus(), ex.getMessage(), ex));
         return ResponseModule.fail(ex.getStatus(), ex.getMessage());
     }
 
     /*************************************  Common Exception Handing  *************************************/
     @ExceptionHandler(Throwable.class)
     public ResponseModule<String> handleAll(Throwable ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseModule<String> handleNullPointerException(NullPointerException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseModule<String> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseModule<String> handleIllegalStateException(IllegalStateException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseModule<String> handleNoHandlerFoundException(NoHandlerFoundException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(AsyncRequestTimeoutException.class)
     public ResponseModule<String> handleAsyncRequestTimeoutException(AsyncRequestTimeoutException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     /************************************* SQL Exception Handing  *************************************/
     @ExceptionHandler(SQLException.class)
     public ResponseModule<String> handleSQLException(SQLException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseModule<String> handleDataAccessException(DataAccessException ex) {
-        return loggingThenBuildResponse(ex);
+        return buildResponse(ex);
     }
 
     /************************************* Http Request Exception Handing  *************************************/
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseModule<String> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
         String errorMsg = StrUtil.format("不支持该HTTP方法: {}, 请使用 {}", ex.getMethod(), Arrays.toString(ex.getSupportedMethods()));
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseModule<String> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex) {
         String errorMsg = StrUtil.format("不支持该媒体类型: {}, 请使用 {}", ex.getContentType(), ex.getSupportedMediaTypes());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
     public ResponseModule<String> handleHttpMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException ex) {
         String errorMsg = StrUtil.format("不支持的媒体类型, 请使用 {}", ex.getSupportedMediaTypes());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     /************************************* Method Parameter Exception Handing  *************************************/
@@ -123,8 +119,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseModule<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         String errorMsg = StrUtil.format("参数解析失败, {}", ex.getMessage());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -135,49 +130,43 @@ public class GlobalExceptionHandler {
         String requiredType = ClassUtils.getQualifiedName(requiredTypeClass == null ? Object.class : requiredTypeClass);
         String providedType = ClassUtils.getDescriptiveType(value);
         String errorMsg = StrUtil.format("参数类型不匹配, 参数名: {}, 需要: {}, 传入: {} 的 {}", variableName, requiredType, providedType, value);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MissingPathVariableException.class)
     public ResponseModule<String> handleMissingPathVariableException(MissingPathVariableException ex) {
         String errorMsg = StrUtil.format("丢失路径参数, 参数名: {}, 参数类型: {}", ex.getVariableName(), ex.getParameter().getParameterType());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MissingRequestCookieException.class)
     public ResponseModule<String> handleMissingRequestCookieException(MissingRequestCookieException ex) {
         String errorMsg = StrUtil.format("丢失Cookie参数, 参数名: {}, 参数类型: {}", ex.getCookieName(), ex.getParameter().getParameterType());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseModule<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
         String errorMsg = StrUtil.format("丢失Header参数, 参数名: {}, 参数类型: {}", ex.getHeaderName(), ex.getParameter().getParameterType());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseModule<String> handleMissingServletRequestPartException(MissingServletRequestPartException ex) {
         String errorMsg = StrUtil.format("丢失参数: {}", ex.getRequestPartName());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseModule<String> handleServletRequestParameterException(MissingServletRequestParameterException ex) {
         String errorMsg = StrUtil.format("丢失Query参数, 参数名: {}, 参数类型: {}", ex.getParameterName(), ex.getParameterType());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     @ExceptionHandler(ServletRequestBindingException.class)
     public ResponseModule<String> handleServletRequestBindingException(ServletRequestBindingException ex) {
         String errorMsg = StrUtil.format("参数绑定失败: {}", ex.getMessage());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
 
@@ -189,8 +178,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     public ResponseModule<String> handleBindException(BindException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getBindingResult());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     /**
@@ -199,8 +187,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseModule<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getBindingResult());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     /**
@@ -209,8 +196,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseModule<String> handleConstraintViolationException(ConstraintViolationException ex) {
         String errorMsg = buildBindingErrorMsg(ex.getConstraintViolations());
-        handlerError(errorMsg);
-        return buildResponse(errorMsg, PARAM_INVALID);
+        return buildResponse(PARAM_INVALID, errorMsg, ex);
     }
 
     private String buildBindingErrorMsg(BindingResult bindingResult) {
@@ -239,26 +225,15 @@ public class GlobalExceptionHandler {
         return prefix + joiner;
     }
 
-    private ResponseModule<String> loggingThenBuildResponse(Throwable throwable) {
-        Throwable rootCause = ExceptionUtil.getRootCause(throwable);
-        handlerError(rootCause);
-        return buildResponse(rootCause.getMessage(), SERVER_ERROR);
+    private ResponseModule<String> buildResponse(Throwable throwable) {
+        return buildResponse(SERVER_ERROR, "", throwable);
     }
 
-    private ResponseModule<String> buildResponse(String message, int code) {
+    private ResponseModule<String> buildResponse(int code, String message, Throwable throwable) {
+        exceptionHandlerExtList.forEach(item -> item.handlerError(code, message, throwable));
         if (EnvUtils.isProduction()) {
             return ResponseModule.fail(code, "系统错误");
         }
         return ResponseModule.fail(code, message);
     }
-
-    private void handlerError(String error){
-        exceptionHandlerExtList.forEach(item-> item.handlerError(error));
-    }
-
-    private void handlerError(Throwable throwable) {
-        String exMsg = ExceptionUtil.getMessage(throwable);
-        exceptionHandlerExtList.forEach(item-> item.handlerError(exMsg,throwable));
-    }
-
 }
