@@ -8,7 +8,10 @@ import lombok.Getter;
 @Getter
 public enum MessageEnum {
     text("text", "文本"),
-    markdown("markdown", "markdown");
+    markdown("markdown", "markdown"),
+
+    template_card("template_card", "模版卡片");
+
     private final String type;
     private final String desc;
 
