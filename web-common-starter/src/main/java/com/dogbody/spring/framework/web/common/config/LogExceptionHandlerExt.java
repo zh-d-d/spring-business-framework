@@ -10,7 +10,17 @@ public class LogExceptionHandlerExt implements ExceptionHandlerExt {
 
 
     @Override
-    public void handlerError(Integer code, String message, Throwable throwable) {
+    public void businessError(Integer code, String message, Throwable throwable) {
+        log.error(message, throwable);
+    }
+
+    @Override
+    public void systemError(Integer code,String message, Throwable throwable) {
+        log.error(message, throwable);
+    }
+
+    @Override
+    public void paramInvalidError(Integer code,Object requestObj, String message, Throwable throwable) {
         log.error(message, throwable);
     }
 }

@@ -11,6 +11,15 @@ package com.dogbody.spring.framework.web.common.config;
  */
 public interface ExceptionHandlerExt {
 
-    default void handlerError(Integer code, String message, Throwable throwable) {
+    default void businessError(Integer code, String errorMsg, Throwable throwable) {
     }
+
+    default void systemError(Integer code,String errorMsg, Throwable throwable) {
+
+    }
+
+    default void paramInvalidError(Integer code,Object requestObj, String errorMsg, Throwable throwable) {
+
+    }
+
 }
